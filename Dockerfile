@@ -16,12 +16,12 @@ RUN apt-get update && apt-get install -y \
 # إنشاء مجلد العمل داخل الحاوية
 WORKDIR /app
 
-# نسخ سكريبت التشغيل إلى داخل الحاوية
-COPY run.sh /app/run.sh
-RUN chmod +x /app/run.sh
+# إنشاء الهارد ديسك الوهمي وتحميل نسخة الويندوز مباشرة أثناء بناء الحاوية
+RUN qemu-img create -f qcow2 winxp.qcow2 10G && \
+    wget -O winxp.iso "https://archive.org/download/WinXPProSP3Arabic/Win_XP_Pro_SP3_Arabic.iso"
 
 # فتح المنفذ 10000 (وهو المنفذ الافتراضي الذي تطلبه منصة Render)
 EXPOSE 10000
 
-# أمر تشغيل الحاوية عند البدء
-CMD ["/app/run.sh"]
+# أمر تشغيل المحاكي وبث الويب مباشرة بداخل سطر واحد
+CMD websockify --web=/usr/share/novnc/ 10000 localhost:5900 & qemu-system-i386 -m 256 -smp 1 -drive file=winxp.qcow2,format=qcow2,index=0,media=disk -cdrom winxp.iso -boot d -vnc localhost:0 -vga std -device usb-tablet
